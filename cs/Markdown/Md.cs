@@ -14,6 +14,7 @@ public class Md
 
     public static Token? ReadHeader(string line, int startIndex)
     {
+        if (line[startIndex] != '#') return null;
         if (line.Length <= startIndex + 1)
             return null;
         var index = startIndex;
