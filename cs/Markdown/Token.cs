@@ -16,7 +16,7 @@ public class Token
 
     public override bool Equals(object? obj) => obj is Token token && Equals(token);
 
-    private bool Equals(Token other)
+    public virtual bool Equals(Token other)
         => Length == other.Length && Position == other.Position && string.Equals(Value, other.Value);
 
     public override int GetHashCode()
