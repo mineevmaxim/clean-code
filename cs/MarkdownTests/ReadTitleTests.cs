@@ -16,7 +16,7 @@ public class ReadTitleTests
         int expectedLength, int expectedLevel)
     {
         var expected = new HeaderToken(expectedValue, startIndex, expectedLength, expectedLevel);
-        var token = Md.ReadHeader(line, startIndex);
+        var token = HeaderToken.ReadHeader(line, startIndex);
         token.Should().Be(expected);
     }
     
@@ -25,7 +25,7 @@ public class ReadTitleTests
     [TestCase("123 # title", 0, TestName = "Invalid start index")]
     public void ReadHeader_ReturnsNull_WithInvalidSyntaxOrArgs(string line, int startIndex)
     {
-        var token = Md.ReadHeader(line, startIndex);
+        var token = HeaderToken.ReadHeader(line, startIndex);
         token.Should().BeNull();
     }
     
@@ -36,7 +36,7 @@ public class ReadTitleTests
         int expectedLength)
     {
         var expected = new HeaderToken(expectedValue, startIndex, expectedLength, 1);
-        var token = Md.ReadHeader(line, startIndex);
+        var token = HeaderToken.ReadHeader(line, startIndex);
         token.Should().Be(expected);
     }
 }
