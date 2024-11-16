@@ -8,7 +8,7 @@ public class ReadItalicTests
 {
     [TestCase("_without close tag", 0, TestName = "Without close tag in text")]
     [TestCase("_without close tag\n in paragraph", 0, TestName = "Without close tag in paragraph")]
-    [TestCase("_ space after start tag", 0, TestName = "Space after start tag")]
+    [TestCase("_ space after start tag_", 0, TestName = "Space after start tag")]
     [TestCase("__", 0, TestName = "Empty string between tags")]
     [TestCase("_text _", 0, TestName = "With space before close tag without correct close tag")]
     [TestCase("_text_", 2, TestName = "With invalid start")]

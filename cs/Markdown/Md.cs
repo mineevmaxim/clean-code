@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Markdown;
 
 public class Md

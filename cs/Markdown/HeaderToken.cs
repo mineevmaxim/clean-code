@@ -1,18 +1,20 @@
-using System.Text;
-
 namespace Markdown;
 
 public class HeaderToken : Token
 {
     public readonly int TitleLevel;
-    public const char Tag = '#';
+    private const char Tag = '#';
+    private static readonly TokenReaderParams Parameters;
+
+    static HeaderToken()
+        => Parameters = new TokenReaderParams("# ", "\n", true, true, true);
 
     public HeaderToken(string value, int position, int length, int level = 1) : base(value, position, length)
         => TitleLevel = level;
 
     public override bool Equals(Token other)
         => base.Equals(other) && other is HeaderToken token && TitleLevel == token.TitleLevel;
-    
+
     public static Token? ReadHeader(string line, int startIndex)
     {
         if (line[startIndex] != Tag) return null;
@@ -27,18 +29,9 @@ public class HeaderToken : Token
             if (titleLevel > 6) return null;
         }
 
-        if (line[++index] != ' ')
-            return null;
-
-        index++;
-
-        var sb = new StringBuilder();
-        while (index < line.Length && line[index] != '\n')
-        {
-            sb.Append(line[index]);
-            index++;
-        }
-        
-        return new HeaderToken(sb.ToString(), startIndex, index - startIndex, titleLevel);
+        var token = TokenReader.ReadToken(line, startIndex + titleLevel - 1, Parameters);
+        return token is null
+            ? null
+            : new HeaderToken(token.Value, startIndex, token.Length + titleLevel - 2, titleLevel);
     }
 }
