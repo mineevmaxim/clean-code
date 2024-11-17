@@ -7,7 +7,7 @@ public class HeaderToken : Token
     private static readonly TokenReaderParams Parameters;
 
     static HeaderToken()
-        => Parameters = new TokenReaderParams("# ", "\n", true, true, true);
+        => Parameters = new TokenReaderParams("# ", "\n", true, true, true, true);
 
     public HeaderToken(string value, int position, int length, int level = 1) : base(value, position, length)
         => TitleLevel = level;

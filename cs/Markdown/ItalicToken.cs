@@ -7,7 +7,7 @@ public class ItalicToken : Token
     private static readonly TokenReaderParams Parameters;
 
     static ItalicToken()
-        => Parameters = new TokenReaderParams("_", "_", false, false);
+        => Parameters = new TokenReaderParams("_", "_", false, false, false);
 
     public ItalicToken(string value, int position, int length) : base(value, position, length)
     {
