@@ -17,7 +17,7 @@ public static class TokenReader
         if (!isStartTag) return null;
         if (isStartTag && line[index] == ' ' && !parameters.CanBeSpaceAfterStartTag) return null;
         var currentEnd = new Queue<char>();
-        var sb = new StringBuilder();
+        var currentValue = new StringBuilder();
         var isEscapable = false;
 
         while (index < line.Length)
@@ -25,9 +25,8 @@ public static class TokenReader
             if (isEscapable)
             {
                 isEscapable = false;
-                if (!EscapableSymbols.Contains(line[index]))
-                    sb.Append('\\');
-                sb.Append(line[index++]);
+                if (!EscapableSymbols.Contains(line[index])) currentValue.Append('\\');
+                currentValue.Append(line[index++]);
                 if (index == line.Length && !parameters.CanBeWithoutCloseTag) return null;
                 continue;
             }
@@ -41,10 +40,10 @@ public static class TokenReader
 
             currentEnd.Enqueue(line[index]);
             var isCloseTag = currentEnd.SequenceEqual(parameters.EndTag);
-            var previousIsSpace = line[index - 1] == ' ';
-            var valueIsEndSubarray = sb.ToString().ToCharArray().All(c => parameters.EndTag.Contains(c));
+            var previousIsSpace = line[index - currentEnd.Count] == ' ';
+            var valueIsEndSubarray = currentValue.ToString().ToCharArray().All(c => parameters.EndTag.Contains(c));
             var isEndOfParagraphOrLine = (line[index] == '\n' || index == line.Length - 1);
-            var isDigitsAround = char.IsDigit(line[index - 1]) || index < line.Length - 2 && char.IsDigit(line[index + 1]);
+            var isDigitsAround = char.IsDigit(line[index - 1]) || index <= line.Length - 2 && char.IsDigit(line[index + 1]);
 
             if (isCloseTag)
             {
@@ -58,10 +57,11 @@ public static class TokenReader
             Continue:
             if (!parameters.CanBeWithoutCloseTag && isEndOfParagraphOrLine) return null;
             if (currentEnd.Count == parameters.EndTag.Length) currentEnd.Dequeue();
-            sb.Append(line[index]);
+            currentValue.Append(line[index]);
             index++;
         }
 
-        return new Token(sb.ToString(), startIndex, index - startIndex + 1);
+        for (var i = 0; i < parameters.EndTag.Length - 1; i++) currentValue.Remove(currentValue.Length - 1, 1);
+        return new Token(currentValue.ToString(), startIndex, index - startIndex + 1);
     }
 }
