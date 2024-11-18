@@ -17,6 +17,7 @@ public class HeaderToken : Token
 
     public static Token? ReadHeader(string line, int startIndex)
     {
+        if (line.Length == 0) return null;
         if (line[startIndex] != Tag) return null;
         if (line.Length <= startIndex + 1)
             return null;

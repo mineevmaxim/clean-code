@@ -20,6 +20,7 @@ public class ReadTitleTests
         token.Should().Be(expected);
     }
     
+    [TestCase("", 0, TestName = "Empty line")]
     [TestCase("#tag", 0, TestName = "Without space after #")]
     [TestCase("####### title", 0, TestName = "Header level greater than 6")]
     [TestCase("123 # title", 0, TestName = "Invalid start index")]

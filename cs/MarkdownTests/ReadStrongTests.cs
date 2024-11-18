@@ -6,7 +6,8 @@ namespace MarkdownTests;
 
 public class ReadStrongTests
 {
-    [TestCase("____", 0, TestName = "Empty line")]
+    [TestCase("", 0, TestName = "Empty line")]
+    [TestCase("____", 0, TestName = "Empty string between tags")]
     [TestCase("__text_", 0, TestName = "Without close tag")]
     [TestCase(@"__text\__", 0, TestName = "With escaped close tag")]
     [TestCase("__ text__", 0, TestName = "Space after start tag")]
@@ -41,6 +42,26 @@ public class ReadStrongTests
     {
         var expected = new StrongToken(expectedValue, start, expectedLength);
         var token = StrongToken.ReadStrong(line, start);
+        token.Should().Be(expected);
+    }
+    
+    [Test]
+    public void ReadStrong_ReturnsToken_WithOneItalicChild()
+    {
+        var expectedChildren = new Token[] {new ItalicToken("text", 5, 6)};
+        var expected = new StrongToken("text _text_ text", 0, 20, expectedChildren);
+        var token = StrongToken.ReadStrong("__text _text_ text__", 0);
+        token?.ChildTokens?.SequenceEqual(expectedChildren).Should().BeTrue();
+        token.Should().Be(expected);
+    }
+    
+    [Test]
+    public void ReadStrong_ReturnsToken_WithTwoItalicChild()
+    {
+        var expectedChildren = new Token[] {new ItalicToken("text", 5, 6), new ItalicToken("text", 13, 6)};
+        var expected = new StrongToken("text _text_ _text_ text", 0, 27, expectedChildren);
+        var token = StrongToken.ReadStrong("__text _text_ _text_ text__", 0);
+        token?.ChildTokens?.SequenceEqual(expectedChildren).Should().BeTrue();
         token.Should().Be(expected);
     }
 }

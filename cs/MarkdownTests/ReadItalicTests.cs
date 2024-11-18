@@ -6,6 +6,7 @@ namespace MarkdownTests;
 
 public class ReadItalicTests
 {
+    [TestCase("", 0, TestName = "Empty line")]
     [TestCase("_without close tag", 0, TestName = "Without close tag in text")]
     [TestCase("_without close tag\n in paragraph", 0, TestName = "Without close tag in paragraph")]
     [TestCase("_ space after start tag_", 0, TestName = "Space after start tag")]
