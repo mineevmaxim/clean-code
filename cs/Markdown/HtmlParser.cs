@@ -8,7 +8,7 @@ public class HtmlParser : IParser
     {
         { MarkdownTokenName.Bold, "strong" },
         { MarkdownTokenName.Italic, "em" },
-        { MarkdownTokenName.Header, "h1" }
+        { MarkdownTokenName.Heading, "h1" }
     };
     
     public string Parse(IEnumerable<IToken> tokens)

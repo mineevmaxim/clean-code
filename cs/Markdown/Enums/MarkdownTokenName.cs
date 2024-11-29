@@ -3,7 +3,8 @@ namespace Markdown.Enums;
 public enum MarkdownTokenName
 {
     Text,
-    Header,
+    Heading,
     Bold,
-    Italic
+    Italic,
+    Root,
 }

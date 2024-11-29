@@ -1,11 +1,13 @@
+using Markdown.Enums;
+
 namespace Markdown;
 
-public class MarkdownToken(int position, string value, IMarkdownTokenType type) : IToken
+public abstract class MarkdownToken(int position, string value) : IToken
 {
     public int Position { get; } = position;
     public string Value { get; } = value;
     public int Length => Value.Length;
-    public IMarkdownTokenType Type { get; } = type;
+    public virtual MarkdownTokenName Name { get; }
 
     public int GetIndexToNextToken() => Position + Length;
 }
