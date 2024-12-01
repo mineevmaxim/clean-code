@@ -1,3 +1,5 @@
+using Markdown.AstNodes;
+
 namespace Markdown;
 
 public class MarkdownToHtmlConverter(ILexer lexer, IParser parser)
@@ -8,6 +10,13 @@ public class MarkdownToHtmlConverter(ILexer lexer, IParser parser)
     public string Convert(string input)
     {
         var tokens = Lexer.Tokenize(input);
-        return Parser.Parse(tokens);
+        var enumerable = tokens.ToList();
+        var ast = Parser.Parse(enumerable);
+        return ConvertAstToHtml(ast);
+    }
+
+    private string ConvertAstToHtml(MarkdownNode ast)
+    {
+        throw new NotImplementedException();
     }
 }

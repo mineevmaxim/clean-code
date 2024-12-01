@@ -1,6 +1,8 @@
+using Markdown.AstNodes;
+
 namespace Markdown;
 
 public interface IParser
 {
-    string Parse(IEnumerable<IToken> tokens);
+    RootMarkdownNode Parse(List<IToken> tokens);
 }
