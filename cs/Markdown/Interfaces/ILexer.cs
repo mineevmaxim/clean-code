@@ -2,5 +2,5 @@ namespace Markdown;
 
 public interface ILexer
 {
-    IEnumerable<IToken> Tokenize(string input);
+    List<IToken> Tokenize(string input);
 }
