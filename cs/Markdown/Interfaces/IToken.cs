@@ -9,4 +9,5 @@ public interface IToken
     int Length { get; }
     string Value { get; }
     int GetIndexToNextToken();
+    bool Is(MarkdownTokenName type);
 }

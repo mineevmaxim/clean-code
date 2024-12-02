@@ -7,31 +7,39 @@ public class MarkdownLexer : ILexer
 {
     private int position;
     private readonly List<IToken> tokens = [];
+    private const string DoubleGround = "__";
+    private const string Ground = "_";
+    private const string Escape = "\\";
+    private const char GroundChar = '_';
+    private const char SharpChar = '#';
+    private const char EscapeChar = '\\';
+    private const char NewLineChar = '\n';
+    private const char SpaceChar = ' ';
+    private readonly char[] escapedChars = [SharpChar, GroundChar, EscapeChar, NewLineChar];
 
     public List<IToken> Tokenize(string input)
     {
         position = 0;
-        var end = input.Length;
-        var stack = new Stack<(string tag, int position)>();
+        var nestingStack = new Stack<string>();
 
-        while (InBoundary(position))
+        while (position < input.Length)
         {
             switch (input[position])
             {
-                case ' ':
-                    tokens.Add(new SpaceToken(position++));
+                case SpaceChar:
+                    ParseSpaceAndAdvance();
                     break;
-                case '\n':
-                    ParseNewLineAndAdvance(stack);
+                case NewLineChar:
+                    ParseNewLineAndAdvance(nestingStack);
                     break;
-                case '\\':
+                case EscapeChar:
                     ParseEscapeAndAdvance(input);
                     break;
-                case '_':
-                    ParseItalicOrBoldAndAdvance(input, stack);
+                case GroundChar:
+                    ParseItalicOrBoldAndAdvance(input, nestingStack);
                     break;
-                case '#':
-                    ParseHeadingAndAdvance(input, stack);
+                case SharpChar:
+                    ParseHeadingAndAdvance(input);
                     break;
                 default:
                     ParseTextAndAdvance(input);
@@ -40,82 +48,135 @@ public class MarkdownLexer : ILexer
         }
 
         return tokens;
-
-        bool InBoundary(int i) => i < end;
     }
 
-    private bool IsStartOfParagraph(string input) => position == 0 || position > 0 && input[position - 1] == '\n';
+    private void ParseSpaceAndAdvance() => tokens.Add(new SpaceToken(position++));
 
-    private void ParseHeadingAndAdvance(string input, Stack<(string tag, int position)> stack)
+    private void ParseHeadingAndAdvance(string input)
     {
-        if (position + 1 < input.Length && input[position + 1] == ' ' && IsStartOfParagraph(input))
-        {
-            tokens.Add(new HeadingToken(position));
-            position += 2;
-            stack.Push(("# ", position));
-        }
-        else
-        {
-            tokens.Add(new TextToken(position, "#"));
-            position++;
-        }
+        if (NextIsSpace(input) && IsStartOfParagraph(input)) tokens.Add(new HeadingToken(position++));
+        else tokens.Add(new TextToken(position, "#"));
+        position++;
     }
 
     private void ParseTextAndAdvance(string input)
     {
-        var sb = new StringBuilder();
+        var value = new StringBuilder();
         var start = position;
-        var endChars = new[] { '#', '_', '\n', '\\', ' ' };
-        while (position < input.Length && !endChars.Contains(input[position]) && !char.IsDigit(input[position]))
-            sb.Append(input[position++]);
+        var endChars = new[] { SharpChar, GroundChar, NewLineChar, EscapeChar, SpaceChar };
+        while (position < input.Length && !endChars.Contains(input[position]) && !CurrentIsDigit(input))
+            value.Append(input[position++]);
 
-        if (sb.Length > 0) tokens.Add(new TextToken(start, sb.ToString()));
-        if (position < input.Length && char.IsDigit(input[position])) ParseNumberAndAdvance(input);
+        if (value.Length > 0) tokens.Add(new TextToken(start, value.ToString()));
+        if (position < input.Length && CurrentIsDigit(input)) ParseNumberAndAdvance(input);
     }
+
 
     private void ParseNumberAndAdvance(string input)
     {
         var sb = new StringBuilder();
         var start = position;
-        while (position < input.Length && (char.IsDigit(input[position]) || input[position] == '_'))
+        while (position < input.Length && (CurrentIsDigit(input) || input[position] == GroundChar))
             sb.Append(input[position++]);
         tokens.Add(new NumberToken(start, sb.ToString()));
     }
 
-    private void ParseItalicOrBoldAndAdvance(string input, Stack<(string tag, int position)> stack)
+    private void ParseItalicOrBoldAndAdvance(string input, Stack<string> stack)
     {
-        var canBeBold = position + 1 < input.Length && input[position + 1] == '_';
-        if (stack.Count > 0 && stack.Peek().tag == "__" && canBeBold) ParseBoldAndAdvance(stack);
-        else if (stack.Count > 0 && stack.Peek().tag == "_") ParseItalicAndAdvance(stack);
-        else if (canBeBold) ParseBoldAndAdvance(stack);
-        else ParseItalicAndAdvance(stack);
+        var isDoubleGround = NextIsGround(input);
+        var isTripleGround = NextIsDoubleGround(input);
+        var isSingleGround = !isTripleGround && !isDoubleGround;
+        if (stack.Count == 0) ParseItalicOrBoldAndAdvanceWhenStackEmpty(isSingleGround, isTripleGround, stack);
+        else if (stack.Count == 1)
+            ParseItalicOrBoldAndAdvanceWhenStackHasOne(isSingleGround, isDoubleGround, isTripleGround, stack);
+        else if (stack.Count == 2) ParseItalicOrBoldAndAdvanceWhenStackHasTwo(isSingleGround, isTripleGround, stack);
     }
 
-    private void ParseBoldAndAdvance(Stack<(string tag, int position)> stack)
+    private void ParseItalicOrBoldAndAdvanceWhenStackEmpty(bool isSingleGround, bool isTripleGround,
+        Stack<string> stack)
     {
-        if (stack.Count == 0 || stack.Count > 0 && (stack.Peek().tag == "# " || stack.Peek().tag == "_"))
-            stack.Push(("__", position));
-        else if (stack.Count > 0 && stack.Peek().tag == "__")
+        if (isSingleGround)
+        {
+            ParseItalicAndAdvance();
+            stack.Push(Ground);
+            return;
+        }
+
+        ParseBoldAndAdvance();
+        stack.Push(DoubleGround);
+        if (!isTripleGround) return;
+        ParseItalicAndAdvance();
+        stack.Push(Ground);
+    }
+
+    private void ParseItalicOrBoldAndAdvanceWhenStackHasOne(bool isSingleGround, bool isDoubleGround,
+        bool isTripleGround,
+        Stack<string> stack)
+    {
+        switch (stack.Peek())
+        {
+            case DoubleGround when isSingleGround:
+                ParseItalicAndAdvance();
+                stack.Push(Ground);
+                break;
+            case DoubleGround:
+            {
+                if (isTripleGround) ParseItalicAndAdvance();
+                ParseBoldAndAdvance();
+                stack.Pop();
+                break;
+            }
+            case Ground:
+            {
+                if (isTripleGround)
+                {
+                    ParseBoldAndAdvance();
+                    ParseItalicAndAdvance();
+                }
+                else if (isDoubleGround)
+                {
+                    tokens.Add(new TextToken(position, DoubleGround));
+                    position += 2;
+                }
+                else ParseItalicAndAdvance();
+
+                stack.Pop();
+                break;
+            }
+        }
+    }
+
+    private void ParseItalicOrBoldAndAdvanceWhenStackHasTwo(bool isSingleGround, bool isTripleGround,
+        Stack<string> stack)
+    {
+        if (isSingleGround)
+        {
+            ParseItalicAndAdvance();
             stack.Pop();
-        else throw new Exception("Не рассмотрел какой-то случай в жирном");
-        
+            return;
+        }
+
+        if (isTripleGround) ParseItalicAndAdvance();
+        ParseBoldAndAdvance();
+
+        stack.Pop();
+        stack.Pop();
+    }
+
+    private void ParseBoldAndAdvance()
+    {
         tokens.Add(new BoldToken(position));
         position += 2;
     }
 
-    private void ParseItalicAndAdvance(Stack<(string tag, int position)> stack)
+    private void ParseItalicAndAdvance()
     {
-        if (stack.Count == 0 || stack.Count > 0 && (stack.Peek().tag == "__" || stack.Peek().tag == "# "))
-            stack.Push(("_", position));
-        else if (stack.Count > 0 && stack.Peek().tag == "_")
-            stack.Pop();
-        else throw new Exception("Не рассмотрел какой-то случай в курсиве");
         tokens.Add(new ItalicToken(position));
         position++;
     }
 
-    private void ParseNewLineAndAdvance(Stack<(string tag, int position)> stack)
-    { 
+    private void ParseNewLineAndAdvance(Stack<string> stack)
+    {
         tokens.Add(new NewLineToken(position));
         stack.Clear();
         position++;
@@ -125,34 +186,31 @@ public class MarkdownLexer : ILexer
     {
         if (position + 1 >= input.Length)
         {
-            tokens.Add(new TextToken(position, "\\"));
+            tokens.Add(new TextToken(position++, Escape));
             return;
         }
 
-        if (input[position + 1] == '#')
+        if (NextIsDoubleGround(input))
         {
-            tokens.Add(new TextToken(position, "#"));
-            position += 2;
-        }
-        else if (position + 2 < input.Length && input[position + 1] == '_' && input[position + 2] == '_')
-        {
-            tokens.Add(new TextToken(position, "__"));
+            tokens.Add(new TextToken(position, DoubleGround));
             position += 3;
+            return;
         }
-        else if (input[position + 1] == '_')
-        {
-            tokens.Add(new TextToken(position, "_"));
-            position += 2;
-        }
-        else if (input[position + 1] == '\\')
-        {
-            tokens.Add(new TextToken(position, "\\"));
-            position += 2;
-        }
-        else
-        {
-            tokens.Add(new TextToken(position, input[position].ToString() + input[position + 1]));
-            position += 2;
-        }
+
+        var next = input[position + 1];
+        tokens.Add(escapedChars.Contains(next)
+            ? new TextToken(position, next.ToString())
+            : new TextToken(position, Escape + next));
+        position += 2;
     }
+
+    private bool NextIsDoubleGround(string input) =>
+        position + 2 < input.Length && input[position + 1] == GroundChar && input[position + 2] == GroundChar;
+
+    private bool NextIsSpace(string input) => position + 1 < input.Length && input[position + 1] == SpaceChar;
+    private bool NextIsGround(string input) => position + 1 < input.Length && input[position + 1] == GroundChar;
+    private bool CurrentIsDigit(string input) => char.IsDigit(input[position]);
+
+    private bool IsStartOfParagraph(string input) =>
+        position == 0 || position > 0 && input[position - 1] == NewLineChar;
 }
