@@ -14,14 +14,14 @@ public class MarkdownParser : IParser
     private const MarkdownTokenName NewLine = MarkdownTokenName.NewLine;
     private const MarkdownTokenName Space = MarkdownTokenName.Space;
 
-    public RootMarkdownNode Parse(List<IToken> tokens)
+    public RootMarkdownNode Parse(List<Token> tokens)
     {
         var root = new RootMarkdownNode();
         ParseChildren(tokens, root, 0, tokens.Count);
         return root;
     }
 
-    private void ParseChildren(List<IToken> tokens, IMarkdownNodeWithChildren parent, int left, int right)
+    private void ParseChildren(List<Token> tokens, IMarkdownNodeWithChildren parent, int left, int right)
     {
         if (left < 0 || right > tokens.Count) return;
         if (left >= right) return;
@@ -61,7 +61,7 @@ public class MarkdownParser : IParser
         }
     }
 
-    private int ParseItalicWithChildren(List<IToken> tokens, IMarkdownNodeWithChildren parent, int start, int right)
+    private int ParseItalicWithChildren(List<Token> tokens, IMarkdownNodeWithChildren parent, int start, int right)
     {
         var italic = new ItalicMarkdownNode();
         var next = FindIndexOfCloseItalicToken(tokens, start);
@@ -100,7 +100,7 @@ public class MarkdownParser : IParser
         return next + 1;
     }
 
-    private int ParseBoldWithChildren(List<IToken> tokens, IMarkdownNodeWithChildren parent, int i)
+    private int ParseBoldWithChildren(List<Token> tokens, IMarkdownNodeWithChildren parent, int i)
     {
         var bold = new BoldMarkdownNode();
         var next = FindIndexOfCloseBoldToken(tokens, i);
@@ -134,7 +134,7 @@ public class MarkdownParser : IParser
         return next + 1;
     }
 
-    private int FindIndexOfCloseItalicToken(List<IToken> tokens, int start)
+    private int FindIndexOfCloseItalicToken(List<Token> tokens, int start)
     {
         var index = start + 1;
         if (index < tokens.Count && tokens[index].Is(Space)) return -1;
@@ -159,7 +159,7 @@ public class MarkdownParser : IParser
         return -1;
     }
 
-    private int FindIndexOfCloseBoldToken(List<IToken> tokens, int start)
+    private int FindIndexOfCloseBoldToken(List<Token> tokens, int start)
     {
         var index = start + 1;
         if (index >= tokens.Count || tokens[index].Is(Space)) return -1;
@@ -173,7 +173,7 @@ public class MarkdownParser : IParser
         return -1;
     }
 
-    private int FindIndexOfCloseHeadingToken(List<IToken> tokens, int start)
+    private int FindIndexOfCloseHeadingToken(List<Token> tokens, int start)
     {
         var index = start;
         while (index < tokens.Count && !tokens[index].Is(NewLine))
@@ -181,7 +181,7 @@ public class MarkdownParser : IParser
         return index == tokens.Count ? -1 : index;
     }
 
-    private (int start, int end) FindIndexOfIntersection(List<IToken> tokens, int left, int right)
+    private (int start, int end) FindIndexOfIntersection(List<Token> tokens, int left, int right)
     {
         for (var i = left; i < right; i++)
             if (tokens[i] is ItalicToken)
@@ -195,11 +195,11 @@ public class MarkdownParser : IParser
         return (-1, -1);
     }
 
-    private bool TokenInWord(List<IToken> tokens, int index)
+    private bool TokenInWord(List<Token> tokens, int index)
         => index > 0 && tokens[index - 1].Is(Text) && index + 1 < tokens.Count &&
            tokens[index + 1].Is(Text);
 
-    private bool ContainsToken(List<IToken> tokens, MarkdownTokenName expected, int left, int right)
+    private bool ContainsToken(List<Token> tokens, MarkdownTokenName expected, int left, int right)
     {
         for (var i = left; i < right; i++)
             if (tokens[i].Is(expected))

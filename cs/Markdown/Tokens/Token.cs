@@ -2,13 +2,12 @@ using Markdown.Enums;
 
 namespace Markdown.Tokens;
 
-public abstract class Token(int position) : IToken
+public abstract class Token(int position)
 {
     public abstract MarkdownTokenName Name { get; }
     public abstract string Value { get; }
     public int Position => position;
     public int Length => Value.Length;
-    public int GetIndexToNextToken() => Position + Length;
     public bool Is(MarkdownTokenName type) => type == Name;
 
     public override bool Equals(object? obj) => obj is Token token && Equals(token);

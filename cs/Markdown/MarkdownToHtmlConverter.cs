@@ -5,8 +5,8 @@ namespace Markdown;
 
 public class MarkdownToHtmlConverter(ILexer lexer, IParser parser)
 {
-    public ILexer Lexer { get; } = lexer;
-    public IParser Parser { get; } = parser;
+    private ILexer Lexer { get; } = lexer;
+    private IParser Parser { get; } = parser;
 
     public string Convert(string input)
     {

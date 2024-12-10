@@ -16,7 +16,7 @@ public class LexerTests
     public void Tokenize_WorksCorrect_WhenItalic()
     {
         const string text = "_italic_";
-        var expected = new IToken[] { new ItalicToken(0), new TextToken(1, "italic"), new ItalicToken(7) };
+        var expected = new Token[] { new ItalicToken(0), new TextToken(1, "italic"), new ItalicToken(7) };
         var actual = lexer.Tokenize(text);
         actual.Should().BeEquivalentTo(expected, o => o.WithStrictOrdering());
     }
@@ -25,7 +25,7 @@ public class LexerTests
     public void Tokenize_WorksCorrect_WhenBold()
     {
         const string text = "__bold__";
-        var expected = new IToken[] { new BoldToken(0), new TextToken(2, "bold"), new BoldToken(6) };
+        var expected = new Token[] { new BoldToken(0), new TextToken(2, "bold"), new BoldToken(6) };
         var actual = lexer.Tokenize(text);
         actual.Should().BeEquivalentTo(expected, o => o.WithStrictOrdering());
     }
@@ -34,7 +34,7 @@ public class LexerTests
     public void Tokenize_WorksCorrect_WhenHeadingWithoutCloseTag()
     {
         const string text = "# heading";
-        var expected = new IToken[] { new HeadingToken(0), new TextToken(2, "heading") };
+        var expected = new Token[] { new HeadingToken(0), new TextToken(2, "heading") };
         var actual = lexer.Tokenize(text);
         actual.Should().BeEquivalentTo(expected, o => o.WithStrictOrdering());
     }
@@ -43,7 +43,7 @@ public class LexerTests
     public void Tokenize_WorksCorrect_WhenHeadingWithCloseTag()
     {
         const string text = "# heading\ntext";
-        var expected = new IToken[]
+        var expected = new Token[]
         {
             new HeadingToken(0), new TextToken(2, "heading"), new NewLineToken(9), new TextToken(10, "text")
         };
@@ -55,7 +55,7 @@ public class LexerTests
     public void Tokenize_WorksCorrect_WithItalicInBold()
     {
         const string text = "__bold _italic___";
-        var expected = new IToken[]
+        var expected = new Token[]
         {
             new BoldToken(0), new TextToken(2, "bold"), new SpaceToken(6), new ItalicToken(7),
             new TextToken(8, "italic"), new ItalicToken(14), new BoldToken(15)
@@ -68,7 +68,7 @@ public class LexerTests
     public void Tokenize_WorksCorrect_WithAllTags()
     {
         const string text = "# a b\\_c _d_ __e__\n___f___ 1_234";
-        var expected = new IToken[]
+        var expected = new Token[]
         {
             new HeadingToken(0),
             new TextToken(2, "a"),

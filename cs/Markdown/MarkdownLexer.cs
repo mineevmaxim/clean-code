@@ -6,7 +6,7 @@ namespace Markdown;
 public class MarkdownLexer : ILexer
 {
     private int position;
-    private readonly List<IToken> tokens = [];
+    private readonly List<Token> tokens = [];
     private const string DoubleGround = "__";
     private const string Ground = "_";
     private const string Escape = "\\";
@@ -17,7 +17,7 @@ public class MarkdownLexer : ILexer
     private const char SpaceChar = ' ';
     private readonly char[] escapedChars = [SharpChar, GroundChar, EscapeChar, NewLineChar];
 
-    public List<IToken> Tokenize(string input)
+    public List<Token> Tokenize(string input)
     {
         position = 0;
         var nestingStack = new Stack<string>();
@@ -55,7 +55,7 @@ public class MarkdownLexer : ILexer
     private void ParseHeadingAndAdvance(string input)
     {
         if (NextIsSpace(input) && IsStartOfParagraph(input)) tokens.Add(new HeadingToken(position++));
-        else tokens.Add(new TextToken(position, "#"));
+        else tokens.Add(new TextToken(position, $"{SharpChar}"));
         position++;
     }
 

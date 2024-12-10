@@ -1,6 +1,8 @@
+using Markdown.Tokens;
+
 namespace Markdown;
 
 public interface ILexer
 {
-    List<IToken> Tokenize(string input);
+    List<Token> Tokenize(string input);
 }

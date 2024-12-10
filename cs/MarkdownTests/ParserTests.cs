@@ -2,7 +2,6 @@ using FluentAssertions;
 using Markdown;
 using Markdown.AstNodes;
 using Markdown.Enums;
-using Markdown.Tokens;
 using NUnit.Framework;
 
 namespace MarkdownTests;
