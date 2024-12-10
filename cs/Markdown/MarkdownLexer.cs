@@ -13,7 +13,9 @@ public class MarkdownLexer : ILexer
         MarkdownSymbols.SharpChar, MarkdownSymbols.GroundChar, MarkdownSymbols.EscapeChar, MarkdownSymbols.NewLineChar
     ];
 
-    public List<Token> Tokenize(string input)
+    public List<Token> Tokenize(string input) => Tokenize(new MarkdownLexerInput(input));
+
+    private List<Token> Tokenize(MarkdownLexerInput input)
     {
         position = 0;
         var nestingStack = new Stack<string>();
@@ -48,14 +50,14 @@ public class MarkdownLexer : ILexer
 
     private void ParseSpaceAndAdvance() => tokens.Add(new SpaceToken(position++));
 
-    private void ParseHeadingAndAdvance(string input)
+    private void ParseHeadingAndAdvance(MarkdownLexerInput input)
     {
-        if (NextIsSpace(input) && IsStartOfParagraph(input)) tokens.Add(new HeadingToken(position++));
+        if (input.NextIsSpace(position) && input.IsStartOfParagraph(position)) tokens.Add(new HeadingToken(position++));
         else tokens.Add(new TextToken(position, MarkdownSymbols.Sharp));
         position++;
     }
 
-    private void ParseTextAndAdvance(string input)
+    private void ParseTextAndAdvance(MarkdownLexerInput input)
     {
         var value = new StringBuilder();
         var start = position;
@@ -64,27 +66,27 @@ public class MarkdownLexer : ILexer
             MarkdownSymbols.SharpChar, MarkdownSymbols.GroundChar, MarkdownSymbols.NewLineChar,
             MarkdownSymbols.EscapeChar, MarkdownSymbols.SpaceChar
         };
-        while (position < input.Length && !endChars.Contains(input[position]) && !CurrentIsDigit(input))
+        while (position < input.Length && !endChars.Contains(input[position]) && !input.CurrentIsDigit(position))
             value.Append(input[position++]);
 
         if (value.Length > 0) tokens.Add(new TextToken(start, value.ToString()));
-        if (position < input.Length && CurrentIsDigit(input)) ParseNumberAndAdvance(input);
+        if (position < input.Length && input.CurrentIsDigit(position)) ParseNumberAndAdvance(input);
     }
 
 
-    private void ParseNumberAndAdvance(string input)
+    private void ParseNumberAndAdvance(MarkdownLexerInput input)
     {
         var sb = new StringBuilder();
         var start = position;
-        while (position < input.Length && (CurrentIsDigit(input) || input[position] == MarkdownSymbols.GroundChar))
+        while (position < input.Length && (input.CurrentIsDigit(position) || input[position] == MarkdownSymbols.GroundChar))
             sb.Append(input[position++]);
         tokens.Add(new NumberToken(start, sb.ToString()));
     }
 
-    private void ParseItalicOrBoldAndAdvance(string input, Stack<string> stack)
+    private void ParseItalicOrBoldAndAdvance(MarkdownLexerInput input, Stack<string> stack)
     {
-        var isDoubleGround = NextIsGround(input);
-        var isTripleGround = NextIsDoubleGround(input);
+        var isDoubleGround = input.NextIsGround(position);
+        var isTripleGround = input.NextIsDoubleGround(position);
         var isSingleGround = !isTripleGround && !isDoubleGround;
         if (stack.Count == 0) ParseItalicOrBoldAndAdvanceWhenStackEmpty(isSingleGround, isTripleGround, stack);
         else if (stack.Count == 1)
@@ -182,7 +184,7 @@ public class MarkdownLexer : ILexer
         position++;
     }
 
-    private void ParseEscapeAndAdvance(string input)
+    private void ParseEscapeAndAdvance(MarkdownLexerInput input)
     {
         if (position + 1 >= input.Length)
         {
@@ -190,7 +192,7 @@ public class MarkdownLexer : ILexer
             return;
         }
 
-        if (NextIsDoubleGround(input))
+        if (input.NextIsDoubleGround(position))
         {
             tokens.Add(new TextToken(position, MarkdownSymbols.DoubleGround));
             position += 3;
@@ -203,19 +205,4 @@ public class MarkdownLexer : ILexer
             : new TextToken(position, MarkdownSymbols.Escape + next));
         position += 2;
     }
-
-    private bool NextIsDoubleGround(string input) =>
-        position + 2 < input.Length && input[position + 1] == MarkdownSymbols.GroundChar &&
-        input[position + 2] == MarkdownSymbols.GroundChar;
-
-    private bool NextIsSpace(string input) =>
-        position + 1 < input.Length && input[position + 1] == MarkdownSymbols.SpaceChar;
-
-    private bool NextIsGround(string input) =>
-        position + 1 < input.Length && input[position + 1] == MarkdownSymbols.GroundChar;
-
-    private bool CurrentIsDigit(string input) => char.IsDigit(input[position]);
-
-    private bool IsStartOfParagraph(string input) =>
-        position == 0 || position > 0 && input[position - 1] == MarkdownSymbols.NewLineChar;
 }
