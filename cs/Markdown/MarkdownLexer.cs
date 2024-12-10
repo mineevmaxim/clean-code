@@ -7,15 +7,11 @@ public class MarkdownLexer : ILexer
 {
     private int position;
     private readonly List<Token> tokens = [];
-    private const string DoubleGround = "__";
-    private const string Ground = "_";
-    private const string Escape = "\\";
-    private const char GroundChar = '_';
-    private const char SharpChar = '#';
-    private const char EscapeChar = '\\';
-    private const char NewLineChar = '\n';
-    private const char SpaceChar = ' ';
-    private readonly char[] escapedChars = [SharpChar, GroundChar, EscapeChar, NewLineChar];
+
+    private readonly char[] escapedChars =
+    [
+        MarkdownSymbols.SharpChar, MarkdownSymbols.GroundChar, MarkdownSymbols.EscapeChar, MarkdownSymbols.NewLineChar
+    ];
 
     public List<Token> Tokenize(string input)
     {
@@ -26,19 +22,19 @@ public class MarkdownLexer : ILexer
         {
             switch (input[position])
             {
-                case SpaceChar:
+                case MarkdownSymbols.SpaceChar:
                     ParseSpaceAndAdvance();
                     break;
-                case NewLineChar:
+                case MarkdownSymbols.NewLineChar:
                     ParseNewLineAndAdvance(nestingStack);
                     break;
-                case EscapeChar:
+                case MarkdownSymbols.EscapeChar:
                     ParseEscapeAndAdvance(input);
                     break;
-                case GroundChar:
+                case MarkdownSymbols.GroundChar:
                     ParseItalicOrBoldAndAdvance(input, nestingStack);
                     break;
-                case SharpChar:
+                case MarkdownSymbols.SharpChar:
                     ParseHeadingAndAdvance(input);
                     break;
                 default:
@@ -55,7 +51,7 @@ public class MarkdownLexer : ILexer
     private void ParseHeadingAndAdvance(string input)
     {
         if (NextIsSpace(input) && IsStartOfParagraph(input)) tokens.Add(new HeadingToken(position++));
-        else tokens.Add(new TextToken(position, $"{SharpChar}"));
+        else tokens.Add(new TextToken(position, MarkdownSymbols.Sharp));
         position++;
     }
 
@@ -63,7 +59,11 @@ public class MarkdownLexer : ILexer
     {
         var value = new StringBuilder();
         var start = position;
-        var endChars = new[] { SharpChar, GroundChar, NewLineChar, EscapeChar, SpaceChar };
+        var endChars = new[]
+        {
+            MarkdownSymbols.SharpChar, MarkdownSymbols.GroundChar, MarkdownSymbols.NewLineChar,
+            MarkdownSymbols.EscapeChar, MarkdownSymbols.SpaceChar
+        };
         while (position < input.Length && !endChars.Contains(input[position]) && !CurrentIsDigit(input))
             value.Append(input[position++]);
 
@@ -76,7 +76,7 @@ public class MarkdownLexer : ILexer
     {
         var sb = new StringBuilder();
         var start = position;
-        while (position < input.Length && (CurrentIsDigit(input) || input[position] == GroundChar))
+        while (position < input.Length && (CurrentIsDigit(input) || input[position] == MarkdownSymbols.GroundChar))
             sb.Append(input[position++]);
         tokens.Add(new NumberToken(start, sb.ToString()));
     }
@@ -98,15 +98,15 @@ public class MarkdownLexer : ILexer
         if (isSingleGround)
         {
             ParseItalicAndAdvance();
-            stack.Push(Ground);
+            stack.Push(MarkdownSymbols.Ground);
             return;
         }
 
         ParseBoldAndAdvance();
-        stack.Push(DoubleGround);
+        stack.Push(MarkdownSymbols.DoubleGround);
         if (!isTripleGround) return;
         ParseItalicAndAdvance();
-        stack.Push(Ground);
+        stack.Push(MarkdownSymbols.Ground);
     }
 
     private void ParseItalicOrBoldAndAdvanceWhenStackHasOne(bool isSingleGround, bool isDoubleGround,
@@ -115,18 +115,18 @@ public class MarkdownLexer : ILexer
     {
         switch (stack.Peek())
         {
-            case DoubleGround when isSingleGround:
+            case MarkdownSymbols.DoubleGround when isSingleGround:
                 ParseItalicAndAdvance();
-                stack.Push(Ground);
+                stack.Push(MarkdownSymbols.Ground);
                 break;
-            case DoubleGround:
+            case MarkdownSymbols.DoubleGround:
             {
                 if (isTripleGround) ParseItalicAndAdvance();
                 ParseBoldAndAdvance();
                 stack.Pop();
                 break;
             }
-            case Ground:
+            case MarkdownSymbols.Ground:
             {
                 if (isTripleGround)
                 {
@@ -135,7 +135,7 @@ public class MarkdownLexer : ILexer
                 }
                 else if (isDoubleGround)
                 {
-                    tokens.Add(new TextToken(position, DoubleGround));
+                    tokens.Add(new TextToken(position, MarkdownSymbols.DoubleGround));
                     position += 2;
                 }
                 else ParseItalicAndAdvance();
@@ -186,13 +186,13 @@ public class MarkdownLexer : ILexer
     {
         if (position + 1 >= input.Length)
         {
-            tokens.Add(new TextToken(position++, Escape));
+            tokens.Add(new TextToken(position++, MarkdownSymbols.Escape));
             return;
         }
 
         if (NextIsDoubleGround(input))
         {
-            tokens.Add(new TextToken(position, DoubleGround));
+            tokens.Add(new TextToken(position, MarkdownSymbols.DoubleGround));
             position += 3;
             return;
         }
@@ -200,17 +200,22 @@ public class MarkdownLexer : ILexer
         var next = input[position + 1];
         tokens.Add(escapedChars.Contains(next)
             ? new TextToken(position, next.ToString())
-            : new TextToken(position, Escape + next));
+            : new TextToken(position, MarkdownSymbols.Escape + next));
         position += 2;
     }
 
     private bool NextIsDoubleGround(string input) =>
-        position + 2 < input.Length && input[position + 1] == GroundChar && input[position + 2] == GroundChar;
+        position + 2 < input.Length && input[position + 1] == MarkdownSymbols.GroundChar &&
+        input[position + 2] == MarkdownSymbols.GroundChar;
 
-    private bool NextIsSpace(string input) => position + 1 < input.Length && input[position + 1] == SpaceChar;
-    private bool NextIsGround(string input) => position + 1 < input.Length && input[position + 1] == GroundChar;
+    private bool NextIsSpace(string input) =>
+        position + 1 < input.Length && input[position + 1] == MarkdownSymbols.SpaceChar;
+
+    private bool NextIsGround(string input) =>
+        position + 1 < input.Length && input[position + 1] == MarkdownSymbols.GroundChar;
+
     private bool CurrentIsDigit(string input) => char.IsDigit(input[position]);
 
     private bool IsStartOfParagraph(string input) =>
-        position == 0 || position > 0 && input[position - 1] == NewLineChar;
+        position == 0 || position > 0 && input[position - 1] == MarkdownSymbols.NewLineChar;
 }

@@ -6,8 +6,6 @@ namespace Markdown;
 
 public class MarkdownParser : IParser
 {
-    private const string DoubleGround = "__";
-    private const string Ground = "_";
     private const MarkdownTokenName Text = MarkdownTokenName.Text;
     private const MarkdownTokenName Bold = MarkdownTokenName.Bold;
     private const MarkdownTokenName Italic = MarkdownTokenName.Italic;
@@ -68,31 +66,31 @@ public class MarkdownParser : IParser
 
         if (next == -1 || next >= right)
         {
-            parent.Children.Add(new TextMarkdownNode(Ground));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.Ground));
             return start + 1;
         }
 
         if (parent is ItalicMarkdownNode)
         {
-            parent.Children.Add(new TextMarkdownNode(Ground));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.Ground));
             ParseChildren(tokens, parent, start + 1, next);
-            parent.Children.Add(new TextMarkdownNode(Ground));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.Ground));
             return next + 1;
         }
 
         if (TokenInWord(tokens, start) && TokenInWord(tokens, next) &&
             ContainsToken(tokens, MarkdownTokenName.Space, start, next))
         {
-            parent.Children.Add(new TextMarkdownNode(Ground));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.Ground));
             for (var j = start + 1; j < next; j++) parent.Children.Add(new TextMarkdownNode(tokens[j].Value));
-            parent.Children.Add(new TextMarkdownNode(Ground));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.Ground));
             return next + 1;
         }
 
         ParseChildren(tokens, italic, start + 1, next);
         if (italic.Children.Count == 0)
         {
-            parent.Children.Add(new TextMarkdownNode(Ground + Ground));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.Ground + MarkdownSymbols.Ground));
             return start + 2;
         }
 
@@ -106,27 +104,27 @@ public class MarkdownParser : IParser
         var next = FindIndexOfCloseBoldToken(tokens, i);
         if (next == -1 || parent is ItalicMarkdownNode)
         {
-            parent.Children.Add(new TextMarkdownNode(DoubleGround));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.DoubleGround));
             return i + 1;
         }
 
         var indexOfIntersection = FindIndexOfIntersection(tokens, i + 1, next);
         if (indexOfIntersection.start > 0)
         {
-            parent.Children.Add(new TextMarkdownNode(DoubleGround));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.DoubleGround));
             ParseChildren(tokens, parent, i + 1, indexOfIntersection.start);
-            parent.Children.Add(new TextMarkdownNode(Ground));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.Ground));
             ParseChildren(tokens, parent, indexOfIntersection.start + 1, next);
-            parent.Children.Add(new TextMarkdownNode(DoubleGround));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.DoubleGround));
             ParseChildren(tokens, parent, next + 1, indexOfIntersection.end);
-            parent.Children.Add(new TextMarkdownNode(Ground));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.Ground));
             return indexOfIntersection.end + 1;
         }
 
         ParseChildren(tokens, bold, i + 1, next);
         if (bold.Children.Count == 0)
         {
-            parent.Children.Add(new TextMarkdownNode(DoubleGround + DoubleGround));
+            parent.Children.Add(new TextMarkdownNode(MarkdownSymbols.DoubleGround + MarkdownSymbols.DoubleGround));
             return i + 2;
         }
 
